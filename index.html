@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto de Venta - Vaqui</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #ff4757;
+            --primary-hover: #ff6b81;
+            --bg: #f1f2f6;
+            --card: #ffffff;
+            --text: #2f3542;
+            --border: #dfe4ea;
+            --success: #2ed573;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Products Section */
+        .products-section {
+            flex: 1.3;
+            padding: 20px 20px 0 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+        }
+
+        #menu-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            padding-bottom: 20px;
+        }
+
+        .top-bar {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .header-btn:hover {
+            background: #f8f9fa;
+        }
+
+        /* Dropdown styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            left: 0;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .dropdown-content button {
+            color: var(--text);
+            padding: 12px 16px;
+            width: 100%;
+            border: none;
+            background: none;
+            text-align: left;
+            cursor: pointer;
+            font-size: 1rem;
+            border-bottom: 1px solid #f1f2f6;
+        }
+
+        .dropdown-content button:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-content button:hover {
+            background-color: #f1f2f6;
+        }
+
+        .dropdown.show .dropdown-content {
+            display: block;
+        }
+
+        h1, h2 {
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .category {
+            margin-bottom: 30px;
+        }
+
+        .category h2 {
+            font-size: 1.2rem;
+            color: #57606f;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .product-btn {
+            background: var(--card);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 20px 10px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .product-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            border-color: var(--primary-hover);
+        }
+
+        .product-btn:active {
+            transform: translateY(0);
+        }
+
+        .product-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .product-price {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Cart Section */
+        .cart-section {
+            flex: 1;
+            background: var(--card);
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .cart-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        .cart-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: #f8f9fa;
+        }
+
+        .cart-items {
+            padding: 20px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .item-info h3 {
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .item-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qty-btn {
+            background: white;
+            border: 1px solid var(--border);
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .qty-btn:hover {
+            background: var(--bg);
+        }
+
+        .cart-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: #f8f9fa;
+            margin-top: auto;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-pay { background: var(--success); }
+        .btn-clear { background: #ff4757; }
+        .btn-export { background: #2f3542; }
+
+        /* Settings Modal */
+        #settingsModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .price-input-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .price-input-group input {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+        
+        .summary-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Login Screen */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            display: flex;
+            align-items: center; justify-content: center;
+            z-index: 2000;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .login-box h2 { margin-bottom: 20px; color: var(--text); }
+        .login-box input {
+            width: 100%; padding: 12px; margin-bottom: 20px;
+            border: 1px solid var(--border); border-radius: 8px;
+            font-size: 1.1rem; text-align: center;
+        }
+        .login-box button {
+            width: 100%; padding: 12px;
+            background: var(--primary); color: white;
+            border: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .login-box button:hover { background: var(--primary-hover); transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>🔐 Acceso al Sistema</h2>
+            <p style="margin-bottom: 15px; color: #666;">Por favor, ingresa la contraseña para continuar.</p>
+            <input type="password" id="password-input" placeholder="Contraseña" onkeypress="if(event.key === 'Enter') checkLogin()">
+            <button onclick="checkLogin()">Ingresar</button>
+            <p id="login-error" style="color: var(--primary); margin-top: 15px; display: none; font-weight: bold;">Contraseña incorrecta</p>
+        </div>
+    </div>
+
+    <div class="layout">
+        <!-- Products Area -->
+        <div class="products-section">
+            <div class="top-bar">
+                <h1 style="margin: 0;">🍟 Menú Vaqui</h1>
+                <div class="dropdown" id="mainMenuDropdown">
+                    <button class="header-btn" onclick="toggleDropdown()">
+                        ☰ Opciones
+                    </button>
+                    <div class="dropdown-content">
+                        <button onclick="showDateAlert()">📅 Fecha del Turno</button>
+                        <button onclick="openSummary()">📊 Resumen Día</button>
+                        <button onclick="closeRegister()">💰 Cierre de Caja</button>
+                        <button onclick="openSettings()">⚙️ Configurar</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="menu-container"></div>
+        </div>
+
+        <!-- Cart Area -->
+        <div class="cart-section">
+            <div class="cart-wrapper">
+                <div class="cart-header">
+                    <h2 style="margin: 0;">📝 Pedido Actual</h2>
+                </div>
+                
+                <div class="cart-items" id="cart-items">
+                    <!-- Items will be injected here -->
+                </div>
+
+                <div class="cart-footer">
+                    <div class="total-row">
+                        <span>Total:</span>
+                        <span id="cart-total">$0</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px; display: flex; justify-content: space-around; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 1.1rem;">
+                            <input type="radio" name="payment_method" value="Efectivo" checked style="width:20px; height:20px;"> 💵 Efectivo
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 1.1rem; color: #6c5ce7;">
+                            <input type="radio" name="payment_method" value="Nequi" style="width:20px; height:20px;"> 📱 Nequi
+                        </label>
+                    </div>
+
+                    <button class="action-btn btn-pay" onclick="processPayment()">✅ Registrar Pedido</button>
+                    <button class="action-btn btn-clear" style="margin-bottom: 0;" onclick="clearCart()">🗑️ Cancelar Pedido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Modal -->
+    <div id="summaryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">📊 Resumen del Día</h2>
+                <button onclick="closeSummary()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="daily-summary" style="font-size: 1.1rem; line-height: 1.6;">
+                Aún no hay ventas registradas hoy.
+            </div>
+            <button class="action-btn btn-export" style="margin-top: 20px; margin-bottom: 0;" onclick="exportToExcel()">📥 Descargar en Excel</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal">
+        <div class="modal-content">
+            <h2>Configurar Menú y Precios</h2>
+            <p style="margin-bottom: 20px; color: #666;">Puedes cambiar los nombres, actualizar precios o agregar productos nuevos. Todo se guarda automáticamente.</p>
+            <div id="settings-container"></div>
+            <button class="action-btn btn-pay" style="margin-top: 20px;" onclick="closeSettings()">Guardar y Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        // Data Structure
+        const defaultMenu = {
+            "Salchipapas": [
+                { id: "s1", name: "Salchipapa Clasica", price: 14000 },
+                { id: "s2", name: "Salchipapa Vaqui", price: 16500 },
+                { id: "s3", name: "Salchipapa Aros de Cebolla", price: 16000 },
+                { id: "s4", name: "Salchipapa Super Vaqui", price: 19000 }
+            ],
+            "Adiciones": [
+                { id: "a1", name: "Salsa de la casa", price: 1000 },
+                { id: "a2", name: "Tocineta", price: 2000 }
+            ],
+            "Bebidas": [
+                { id: "b1", name: "Coca Cola 500ml", price: 3500 },
+                { id: "b2", name: "Jugo Hit 500ml", price: 3500 }
+            ]
+        };
+
+        // State
+        let menu = defaultMenu;
+        let cart = [];
+        let salesHistory = [];
+
+        const PASSWORDS = {
+            admin: "admin1234",
+            empleado: "ventas1234"
+        };
+        let currentUserRole = null;
+
+        // --- CONFIGURACIÓN DE SUPABASE ---
+        const SUPABASE_CONFIG = {
+            url: "TU_SUPABASE_URL",          // Pega tu Project URL de Supabase
+            key: "TU_SUPABASE_ANON_KEY",     // Pega tu Project API anon key
+            table: "store_data",             // El nombre de la tabla creada
+            recordId: "vaqui"                // El identificador para este negocio
+        };
+        
+        let supabaseClient = null;
+        try {
+            if (SUPABASE_CONFIG.url !== "TU_SUPABASE_URL") {
+                supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+            }
+        } catch(e) {
+            console.error("Error inicializando Supabase. Revisa las comillas en tu URL/Key.", e);
+        }
+
+        function checkLogin() {
+            const input = document.getElementById('password-input').value;
+            let role = null;
+            if (input === PASSWORDS.admin) role = 'admin';
+            else if (input === PASSWORDS.empleado) role = 'empleado';
+
+            if (role) {
+                document.getElementById('login-screen').style.display = 'none';
+                sessionStorage.setItem('isLoggedIn_vaqui', 'true');
+                sessionStorage.setItem('userRole_vaqui', role);
+                applyRolePermissions(role);
+                loadServerData();
+            } else {
+                document.getElementById('login-error').innerText = "Contraseña incorrecta. Pista: admin1234 o ventas1234";
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        function applyRolePermissions(role) {
+            currentUserRole = role;
+            if (role === 'empleado') {
+                // Ocultar botones de cierre de caja y configuración para empleados
+                const btns = document.querySelectorAll('.dropdown-content button');
+                btns.forEach(btn => {
+                    if (btn.innerText.includes('Cierre de Caja') || btn.innerText.includes('Configurar')) {
+                        btn.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        async function loadServerData() {
+            if (!supabaseClient) {
+                console.warn("Supabase no configurado. Usando datos locales temporalmente.");
+                menu = JSON.parse(localStorage.getItem('vaqui_menu_v1')) || defaultMenu;
+                salesHistory = JSON.parse(localStorage.getItem('vaqui_sales_history_v1')) || [];
+                renderMenu();
+                updateDailySummary();
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from(SUPABASE_CONFIG.table)
+                    .select('*')
+                    .eq('id', SUPABASE_CONFIG.recordId)
+                    .single();
+                
+                if (error && error.code === 'PGRST116') {
+                    // El archivo no existe aún en Supabase, lo creamos subiendo lo local
+                    console.log("Creando nuevo registro en Supabase...");
+                    menu = JSON.parse(localStorage.getItem('vaqui_menu_v1')) || defaultMenu;
+                    salesHistory = JSON.parse(localStorage.getItem('vaqui_sales_history_v1')) || [];
+                    await saveServerData();
+                } else if (error) {
+                    console.error("Error al cargar de Supabase:", error.message);
+                    alert("Error conectando a Supabase (Revisa RLS o tus credenciales). Cargando datos locales.");
+                    menu = JSON.parse(localStorage.getItem('vaqui_menu_v1')) || defaultMenu;
+                    salesHistory = JSON.parse(localStorage.getItem('vaqui_sales_history_v1')) || [];
+                } else if (data) {
+                    if (data.menu) menu = data.menu;
+                    if (data.salesHistory) salesHistory = data.salesHistory;
+                }
+                
+                // Siempre renderizar el menú, haya error o no
+                renderMenu();
+                updateDailySummary();
+            } catch (error) {
+                console.error("Error de red cargando datos de Supabase:", error);
+                menu = JSON.parse(localStorage.getItem('vaqui_menu_v1')) || defaultMenu;
+                salesHistory = JSON.parse(localStorage.getItem('vaqui_sales_history_v1')) || [];
+                renderMenu();
+                updateDailySummary();
+            }
+        }
+
+        async function saveServerData() {
+            if (!supabaseClient) {
+                return; // Si no hay token configurado, solo se guarda en localStorage
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from(SUPABASE_CONFIG.table)
+                    .upsert({ 
+                        id: SUPABASE_CONFIG.recordId, 
+                        menu: menu, 
+                        salesHistory: salesHistory 
+                    });
+                
+                if (error) {
+                     console.error("Error al guardar en Supabase:", error.message);
+                } else {
+                     console.log("Guardado en Supabase exitosamente.");
+                }
+            } catch (error) {
+                console.error("Error de red guardando en Supabase:", error);
+            }
+        }
+        
+        // Formatting
+        const formatMoney = (amount) => {
+            return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+        };
+
+        // Initialization
+        function renderMenu() {
+            const container = document.getElementById('menu-container');
+            container.innerHTML = '';
+
+            for (const [category, items] of Object.entries(menu)) {
+                let categoryHTML = `<div class="category"><h2>${category}</h2><div class="product-grid">`;
+                
+                items.forEach(item => {
+                    categoryHTML += `
+                        <div class="product-btn" onclick="addToCart('${item.id}')">
+                            <div class="product-name">${item.name}</div>
+                            <div class="product-price">${formatMoney(item.price)}</div>
+                        </div>
+                    `;
+                });
+
+                categoryHTML += `</div></div>`;
+                container.innerHTML += categoryHTML;
+            }
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            const totalEl = document.getElementById('cart-total');
+            container.innerHTML = '';
+            
+            let total = 0;
+
+            if (cart.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">El pedido está vacío.<br>Toca un producto para agregarlo.</p>';
+            }
+
+            cart.forEach((item, index) => {
+                total += item.price * item.quantity;
+                container.innerHTML += `
+                    <div class="cart-item">
+                        <div class="item-info">
+                            <h3>${item.name}</h3>
+                            <div style="color:var(--primary); font-weight:bold;">${formatMoney(item.price * item.quantity)}</div>
+                        </div>
+                        <div class="item-controls">
+                            <button class="qty-btn" onclick="updateQty(${index}, -1)">-</button>
+                            <span style="font-weight:bold; width: 20px; text-align:center;">${item.quantity}</span>
+                            <button class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            totalEl.innerText = formatMoney(total);
+        }
+
+        // Actions
+        function addToCart(id) {
+            let product = null;
+            for (const category of Object.values(menu)) {
+                const found = category.find(i => i.id === id);
+                if (found) product = found;
+            }
+
+            if (!product) return;
+
+            const existingIndex = cart.findIndex(i => i.id === id);
+            if (existingIndex > -1) {
+                cart[existingIndex].quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            renderCart();
+        }
+
+        function updateQty(index, delta) {
+            cart[index].quantity += delta;
+            if (cart[index].quantity <= 0) {
+                cart.splice(index, 1);
+            }
+            renderCart();
+        }
+
+        function clearCart() {
+            if(confirm("¿Estás seguro de cancelar este pedido?")) {
+                cart = [];
+                renderCart();
+            }
+        }
+
+        function processPayment() {
+            if (cart.length === 0) {
+                alert("Agrega productos al pedido primero.");
+                return;
+            }
+
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+            const now = new Date();
+            
+            const order = {
+                date: now.toLocaleDateString(),
+                time: now.toLocaleTimeString(),
+                items: [...cart],
+                method: paymentMethod,
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+            };
+
+            salesHistory.push(order);
+            localStorage.setItem('vaqui_sales_history_v1', JSON.stringify(salesHistory)); // Backup local
+            saveServerData();
+            
+            cart = [];
+            document.querySelector('input[name="payment_method"][value="Efectivo"]').checked = true; // reset to default
+            renderCart();
+            updateDailySummary();
+            
+            const btn = document.querySelector('.btn-pay');
+            const originalText = btn.innerText;
+            btn.innerText = "¡Registrado!";
+            btn.style.background = "#20bf6b";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = "var(--success)";
+            }, 1000);
+        }
+
+        function updateDailySummary() {
+            const today = new Date().toLocaleDateString();
+            const todaysOrders = salesHistory.filter(o => o.date === today);
+            
+            if (todaysOrders.length === 0) {
+                document.getElementById('daily-summary').innerHTML = 'Aún no hay ventas registradas hoy.';
+                return;
+            }
+
+            let totalEfectivo = 0;
+            let totalNequi = 0;
+            const itemCounts = {};
+
+            todaysOrders.forEach(order => {
+                if (order.method === 'Nequi') {
+                    totalNequi += order.total;
+                } else {
+                    totalEfectivo += order.total;
+                }
+                
+                order.items.forEach(item => {
+                    itemCounts[item.name] = (itemCounts[item.name] || 0) + item.quantity;
+                });
+            });
+
+            const totalDia = totalEfectivo + totalNequi;
+
+            let summaryHTML = `
+                <div class="summary-box">
+                    <div style="font-size:1.3rem; font-weight:bold; margin-bottom:5px;">Total Hoy: ${formatMoney(totalDia)}</div>
+                    <div style="color:#2ed573;">💵 Efectivo: ${formatMoney(totalEfectivo)}</div>
+                    <div style="color:#6c5ce7;">📱 Nequi: ${formatMoney(totalNequi)}</div>
+                </div>
+                <strong>Cantidades Vendidas:</strong><ul style="margin-top:5px; padding-left: 20px;">`;
+            
+            for (const [name, qty] of Object.entries(itemCounts)) {
+                summaryHTML += `<li>${name}: <strong>${qty}</strong></li>`;
+            }
+            summaryHTML += `</ul>`;
+
+            document.getElementById('daily-summary').innerHTML = summaryHTML;
+        }
+
+        // Export to CSV/Excel
+        function exportToExcel() {
+            if (salesHistory.length === 0) {
+                alert("No hay ventas para exportar.");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Fecha,Hora,Metodo Pago,Producto,Cantidad,Precio Unitario,TotalLinea\n";
+
+            salesHistory.forEach(order => {
+                const method = order.method || 'Efectivo';
+                order.items.forEach(item => {
+                    const row = [
+                        order.date,
+                        order.time,
+                        method,
+                        `"${item.name}"`,
+                        item.quantity,
+                        item.price,
+                        item.price * item.quantity
+                    ].join(",");
+                    csvContent += row + "\n";
+                });
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Ventas_Vaqui_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Settings Logic
+        function openSettings() {
+            if (currentUserRole !== 'admin') {
+                alert("Solo los administradores pueden modificar el menú.");
+                return;
+            }
+            const container = document.getElementById('settings-container');
+            container.innerHTML = '';
+
+            for (const [category, items] of Object.entries(menu)) {
+                let catHTML = `<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px;">`;
+                catHTML += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="color:#555; margin:0;">${category}</h3>
+                    <button onclick="addProduct('${category}')" style="background:var(--success); color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">+ Agregar</button>
+                </div>`;
+                
+                items.forEach(item => {
+                    catHTML += `
+                        <div class="price-input-group">
+                            <input type="text" value="${item.name}" onchange="updateProduct('${category}', '${item.id}', 'name', this.value)" style="flex:1; margin-right:10px; font-weight:bold;" placeholder="Nombre Producto">
+                            <div style="display:flex; align-items:center;">
+                                <span style="margin-right:5px; color:#555;">$</span>
+                                <input type="number" value="${item.price}" onchange="updateProduct('${category}', '${item.id}', 'price', this.value)" style="width:90px;">
+                                <button onclick="deleteProduct('${category}', '${item.id}')" style="margin-left:10px; background:#ff4757; color:white; border:none; border-radius:4px; cursor:pointer; padding:8px 10px;" title="Eliminar">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                catHTML += `</div>`;
+                container.innerHTML += catHTML;
+            }
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function updateProduct(category, id, field, value) {
+            const item = menu[category].find(i => i.id === id);
+            if (item) {
+                if (field === 'price') {
+                    item.price = parseInt(value) || 0;
+                } else if (field === 'name') {
+                    item.name = value;
+                }
+                saveMenu();
+            }
+        }
+        
+        function addProduct(category) {
+            const newId = 'prod_' + Math.random().toString(36).substr(2, 9);
+            menu[category].push({ id: newId, name: "Nuevo Producto", price: 0 });
+            saveMenu();
+            openSettings(); // refresh view
+        }
+
+        function deleteProduct(category, id) {
+            if(confirm("¿Seguro que deseas eliminar este producto del menú?")) {
+                menu[category] = menu[category].filter(i => i.id !== id);
+                saveMenu();
+                openSettings(); // refresh view
+            }
+        }
+        
+        function saveMenu() {
+            localStorage.setItem('vaqui_menu_v1', JSON.stringify(menu)); // Backup local
+            saveServerData();
+            renderMenu();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+            renderCart(); // refresh in case names changed while in cart
+        }
+
+        // Dropdown Logic
+        function toggleDropdown() {
+            document.getElementById("mainMenuDropdown").classList.toggle("show");
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.header-btn')) {
+                var dropdowns = document.getElementsByClassName("dropdown");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        function showDateAlert() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const today = new Date().toLocaleDateString('es-CO', options);
+            alert("Turno actual:\n" + today.charAt(0).toUpperCase() + today.slice(1));
+        }
+
+        function closeRegister() {
+            if (currentUserRole !== 'admin') {
+                alert("Solo los administradores pueden hacer el cierre de caja.");
+                return;
+            }
+            if (salesHistory.length === 0) {
+                alert("No hay ventas para cerrar en este turno.");
+                return;
+            }
+            if (confirm("¿Estás seguro de hacer el cierre de caja?\nEsto descargará el reporte de hoy en Excel y reiniciará las ventas para un nuevo turno.")) {
+                exportToExcel();
+                salesHistory = [];
+                localStorage.setItem('vaqui_sales_history_v1', JSON.stringify(salesHistory)); // Backup local
+                saveServerData();
+                updateDailySummary();
+                alert("Cierre de caja exitoso. Las ventas se han reiniciado.");
+            }
+        }
+
+        // Summary Modal Logic
+        function openSummary() {
+            updateDailySummary();
+            document.getElementById('summaryModal').style.display = 'flex';
+        }
+
+        function closeSummary() {
+            document.getElementById('summaryModal').style.display = 'none';
+        }
+
+        // Init
+        renderCart();
+        
+        if (sessionStorage.getItem('isLoggedIn_vaqui') === 'true') {
+            document.getElementById('login-screen').style.display = 'none';
+            applyRolePermissions(sessionStorage.getItem('userRole_vaqui'));
+            loadServerData();
+        } else {
+            renderMenu();
+            updateDailySummary();
+        }
+
+        // Refrescar datos en segundo plano
+        setInterval(() => {
+            if (sessionStorage.getItem('isLoggedIn_vaqui') === 'true') {
+                loadServerData();
+            }
+        }, 3000);
+
+    </script>
+</body>
+</html>
